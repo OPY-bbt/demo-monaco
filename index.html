@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+    <link
+      rel="stylesheet"
+      data-name="vs/editor/editor.main"
+      href="../node_modules/monaco-editor/min/vs/editor/editor.main.css"
+    />
+  </head>
+  <body>
+    <h2>Monaco Editor</h2>
+    <ul class="files">
+      <li><button>js 1</button></li>
+      <li><button>js 2</button></li>
+      <li><button>py 1</button></li>
+      <li><button>py 2</button></li>
+      <li><button>ts 1</button></li>
+    </ul>
+    <h4>current file: <span class="currentFileName">js 1</span></h4>
+    <div
+      id="container"
+      style="width: 800px; height: 600px; border: 1px solid grey"
+    ></div>
+
+    <script>
+      var require = { paths: { vs: "../node_modules/monaco-editor/min/vs" } };
+    </script>
+    <script src="../node_modules/monaco-editor/min/vs/loader.js"></script>
+    <script src="../node_modules/monaco-editor/min/vs/editor/editor.main.nls.js"></script>
+    <script src="../node_modules/monaco-editor/min/vs/editor/editor.main.js"></script>
+
+    <script>
+      const originTextJs1 = [
+        "function x() {",
+        '\tconsole.log("Hello world!");',
+        "}",
+      ].join("\n");
+
+      const originTextJs2 = [
+        "function x() {",
+        '\tconsole.log("Hello world! from js2");',
+        "}",
+      ].join("\n");
+
+      const originTextPy1 = [
+        "from banana import *",
+        "",
+        "class Monkey:",
+        "	# Bananas the monkey can eat.",
+        "	capacity = 10",
+        "	def eat(self, N):",
+        "		'''Make the monkey eat N bananas!'''",
+        "		capacity = capacity - N*banana.size",
+        "",
+        "	def feeding_frenzy(self):",
+        "		eat(9.25)",
+        '		return "Yum yum"',
+      ].join("\n");
+
+      const originTextPy2 = [
+        "# originTextPy2",
+        "from banana import *",
+        "",
+        "class Monkey:",
+        "	# Bananas the monkey can eat.",
+        "	capacity = 10",
+        "	def eat(self, N):",
+        "		'''Make the monkey eat N bananas!'''",
+        "		capacity = capacity - N*banana.size",
+        "",
+        "	def feeding_frenzy(self):",
+        "		eat(9.25)",
+        '		return "Yum yum"',
+      ].join("\n");
+
+      const originTextTs1 = ["const a: string = '1';"].join("\n");
+    </script>
+
+    <script>
+      const modelJs1 = monaco.editor.createModel(originTextJs1, "javascript");
+      const modelJs2 = monaco.editor.createModel(originTextJs2, "javascript");
+      const modelPy1 = monaco.editor.createModel(originTextPy1, "python");
+      const modelPy2 = monaco.editor.createModel(originTextPy2, "python");
+      const modelTs1 = monaco.editor.createModel(originTextTs1, "typescript");
+
+      const models = {
+        "js 1": modelJs1,
+        "js 2": modelJs2,
+        "py 1": modelPy1,
+        "py 2": modelPy2,
+        "ts 1": modelTs1,
+      };
+    </script>
+
+    <script>
+      const editor = monaco.editor.create(
+        document.getElementById("container"),
+        { model: modelJs1 }
+      );
+    </script>
+
+    <script>
+      function createDependencyProposals(range) {
+        // returning a static list of proposals, not even looking at the prefix (filtering is done by the Monaco editor),
+        // here you could do a server side lookup
+        return [
+          {
+            label: "lodash",
+            kind: monaco.languages.CompletionItemKind.Function,
+            documentation: "The Lodash library exported as Node.js modules.",
+            insertText: "lodash",
+            range: range,
+          },
+          {
+            label: "express",
+            kind: monaco.languages.CompletionItemKind.Function,
+            documentation: "Fast, unopinionated, minimalist web framework",
+            insertText: "express",
+            range: range,
+          },
+          {
+            label: "mkdirp",
+            kind: monaco.languages.CompletionItemKind.Function,
+            documentation: "Recursively mkdir, like <code>mkdir -p</code>",
+            insertText: "mkdirp",
+            range: range,
+          },
+          {
+            label: "my-third-party-library",
+            kind: monaco.languages.CompletionItemKind.Function,
+            documentation: "Describe your library here",
+            insertText: "${1:my-third-party-library}: ${2:1.2.3}",
+            // insertTextRules:
+            //   monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            range: range,
+          },
+        ];
+      }
+
+      monaco.languages.registerCompletionItemProvider("javascript", {
+        provideCompletionItems: function (model, position) {
+          // find out if we are completing a property in the 'dependencies' object.
+          //   var textUntilPosition = model.getValueInRange({
+          //     startLineNumber: 1,
+          //     startColumn: 1,
+          //     endLineNumber: position.lineNumber,
+          //     endColumn: position.column,
+          //   });
+          //   var match = textUntilPosition.match(
+          //     /"dependencies"\s*:\s*\{\s*("[^"]*"\s*:\s*"[^"]*"\s*,\s*)*([^"]*)?$/
+          //   );
+          //   if (!match) {
+          //     return { suggestions: [] };
+          //   }
+          var word = model.getWordUntilPosition(position);
+
+          var range = {
+            startLineNumber: position.lineNumber,
+            endLineNumber: position.lineNumber,
+            startColumn: word.startColumn,
+            endColumn: word.endColumn,
+          };
+          return {
+            suggestions: createDependencyProposals(range),
+          };
+        },
+      });
+    </script>
+
+    <script>
+      const $fileBtns = document.body.querySelectorAll(".files button");
+      const $currentFileNameSpan =
+        document.body.querySelector(".currentFileName");
+      for (const $btn of $fileBtns) {
+        $btn.addEventListener("click", () => {
+          $currentFileNameSpan.innerHTML = $btn.innerHTML;
+          editor.setModel(models[$btn.innerHTML]);
+        });
+      }
+    </script>
+  </body>
+</html>
