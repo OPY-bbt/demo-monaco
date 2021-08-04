@@ -11,11 +11,11 @@
   <body>
     <h2>Monaco Editor</h2>
     <ul class="files">
-      <li><button>js 1</button></li>
-      <li><button>js 2</button></li>
-      <li><button>py 1</button></li>
-      <li><button>py 2</button></li>
-      <li><button>ts 1</button></li>
+      <li><button id="typescript">js 1</button></li>
+      <li><button id="typescript">js 2</button></li>
+      <li><button id="python">py 1</button></li>
+      <li><button id="python">py 2</button></li>
+      <li><button id="typescript">ts 1</button></li>
     </ul>
     <h4>current file: <span class="currentFileName">js 1</span></h4>
     <div
@@ -31,17 +31,32 @@
     <script src="../node_modules/monaco-editor/min/vs/editor/editor.main.js"></script>
 
     <script>
-      const originTextJs1 = [
-        "function x() {",
-        '\tconsole.log("Hello world!");',
-        "}",
-      ].join("\n");
+      var tsOp =
+        monaco.languages.typescript.typescriptDefaults["getCompilerOptions"]();
+      tsOp.allowJs = true;
+      tsOp.checkJs = true;
+      tsOp.strict = true;
+      monaco.languages.typescript.typescriptDefaults.setCompilerOptions(tsOp);
+    </script>
 
-      const originTextJs2 = [
-        "function x() {",
-        '\tconsole.log("Hello world! from js2");',
-        "}",
-      ].join("\n");
+    <script>
+      const originTextJs1 = `/**
+ * @param {string} a
+ * @param {number} [b]
+ */
+function foo(a, b) {
+
+}
+foo(1)`;
+
+      const originTextJs2 = `/**
+ * @param {string} a
+ * @param {number} [b]
+ */
+function foo(a, b) {
+
+}
+foo(1)`;
 
       const originTextPy1 = [
         "from banana import *",
@@ -78,26 +93,29 @@
     </script>
 
     <script>
-      const modelJs1 = monaco.editor.createModel(originTextJs1, "javascript");
-      const modelJs2 = monaco.editor.createModel(originTextJs2, "javascript");
-      const modelPy1 = monaco.editor.createModel(originTextPy1, "python");
-      const modelPy2 = monaco.editor.createModel(originTextPy2, "python");
-      const modelTs1 = monaco.editor.createModel(originTextTs1, "typescript");
+      function createModel(data) {
+        return monaco.editor.createModel(data[0], data[1]);
+      }
 
-      const models = {
-        "js 1": modelJs1,
-        "js 2": modelJs2,
-        "py 1": modelPy1,
-        "py 2": modelPy2,
-        "ts 1": modelTs1,
+      var models = {
+        "js 1": [originTextJs1, "typescript"],
+        "js 2": [originTextJs2, "typescript"],
+        "py 1": [originTextPy1, "python"],
+        "py 2": [originTextPy2, "python"],
+        "ts 1": [originTextTs1, "typescript"],
+      };
+
+      var states = {
+        "js 1": null,
+        "js 2": null,
+        "py 1": null,
+        "py 2": null,
+        "ts 1": null,
       };
     </script>
 
     <script>
-      const editor = monaco.editor.create(
-        document.getElementById("container"),
-        { model: modelJs1 }
-      );
+      const editor = monaco.editor.create(document.getElementById("container"));
     </script>
 
     <script>
@@ -172,10 +190,21 @@
       const $fileBtns = document.body.querySelectorAll(".files button");
       const $currentFileNameSpan =
         document.body.querySelector(".currentFileName");
+
+      const modelJs1 = createModel(models["js 1"]);
+      editor.setModel(modelJs1);
+
       for (const $btn of $fileBtns) {
         $btn.addEventListener("click", () => {
+          var currentState = editor.saveViewState();
+          states[$currentFileNameSpan.innerHTML] = currentState;
           $currentFileNameSpan.innerHTML = $btn.innerHTML;
-          editor.setModel(models[$btn.innerHTML]);
+
+          editor.getModel().dispose();
+
+          editor.setModel(createModel(models[$btn.innerHTML]));
+          editor.restoreViewState(states[$btn.innerHTML]);
+          editor.focus();
         });
       }
     </script>
